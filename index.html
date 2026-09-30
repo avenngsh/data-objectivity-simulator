@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Epistemic Illusion Simulator | NMC5364</title>
+    <style>
+        :root {
+            --primary: #1a365d;
+            --accent-west: #2b6cb0;
+            --accent-state: #c53030;
+            --bg: #f7fafc;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        p.subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+
+        .regime-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .btn-regime {
+            flex: 1;
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .btn-regime.active-west {
+            border-color: var(--accent-west);
+            background-color: #ebf8ff;
+            color: var(--accent-west);
+        }
+
+        .btn-regime.active-state {
+            border-color: var(--accent-state);
+            background-color: #fff5f5;
+            color: var(--accent-state);
+        }
+
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--primary);
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #a0aec0;
+        }
+
+        .results-card {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            background: #edf2f7;
+            border-left: 5px solid var(--primary);
+        }
+
+        .results-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .metric-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 5px;
+            margin-bottom: 10px;
+        }
+
+        .tag-persona { background: #e9d8fd; color: #553c9a; }
+        .tag-risk { background: #feebc8; color: #9c4221; }
+
+        footer {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Data "Objectivity" Simulator</h1>
+    <p class="subtitle">NMC5364 Panel Interactive: Explore Press Regimes & Epistemic Outcomes</p>
+
+    <div class="regime-selector">
+        <div id="btnWest" class="btn-regime active-west" onclick="setRegime('west')">
+            Western Award Criteria<br><small>(Young et al., 2018)</small>
+        </div>
+        <div id="btnState" class="btn-regime" onclick="setRegime('state')">
+            State-Mediated Press<br><small>(Shangyuan Wu, 2021)</small>
+        </div>
+    </div>
+
+    <div class="slider-group">
+        <label>1. Data Access & Transparency</label>
+        <input type="range" id="transparency" min="1" max="5" value="2" onchange="updateSimulation()">
+        <div class="slider-labels">
+            <span>Proprietary / Top-Down Feed</span>
+            <span>Downloadable Microdata</span>
+        </div>
+    </div>
+
+    <div class="slider-group">
+        <label>2. Newsroom Computational Literacy</label>
+        <input type="range" id="literacy" min="1" max="5" value="2" onchange="updateSimulation()">
+        <div class="slider-labels">
+            <span>Basic / Epistemic Dependence</span>
+            <span>Advanced / Custom Code</span>
+        </div>
+    </div>
+
+    <div class="slider-group">
+        <label>3. Visualization Interactivity Level</label>
+        <input type="range" id="interactivity" min="1" max="5" value="2" onchange="updateSimulation()">
+        <div class="slider-labels">
+            <span>Static / Tooltips Only</span>
+            <span>Exploratory & Reconfigurable</span>
+        </div>
+    </div>
+
+    <div class="results-card" id="outputCard">
+        <span class="metric-tag tag-persona" id="personaTag">Audience Persona: Passive Consumer</span>
+        <span class="metric-tag tag-risk" id="riskTag">Epistemic Risk: Illusion of Agency</span>
+        <h3 id="resultTitle">Cosmetic Interactivity & Tool Constraints</h3>
+        <p id="resultDesc">Like most award finalists in Young et al. (2018), small teams rely on off-the-shelf software (e.g. Google Maps). Users get hover tooltips, but raw data remains locked away.</p>
+    </div>
+
+    <footer>
+        NMC5364 Assignment 1 | Deconstructing Quantitative Neutrality
+    </footer>
+</div>
+
+<script>
+    let currentRegime = 'west';
+
+    function setRegime(regime) {
+        currentRegime = regime;
+        const btnWest = document.getElementById('btnWest');
+        const btnState = document.getElementById('btnState');
+
+        if (regime === 'west') {
+            btnWest.className = 'btn-regime active-west';
+            btnState.className = 'btn-regime';
+            document.getElementById('transparency').value = 2;
+            document.getElementById('literacy').value = 3;
+            document.getElementById('interactivity').value = 2;
+        } else {
+            btnWest.className = 'btn-regime';
+            btnState.className = 'btn-regime active-state';
+            document.getElementById('transparency').value = 1;
+            document.getElementById('literacy').value = 1;
+            document.getElementById('interactivity').value = 1;
+        }
+        updateSimulation();
+    }
+
+    function updateSimulation() {
+        const trans = parseInt(document.getElementById('transparency').value);
+        const lit = parseInt(document.getElementById('literacy').value);
+        const inter = parseInt(document.getElementById('interactivity').value);
+
+        const personaTag = document.getElementById('personaTag');
+        const riskTag = document.getElementById('riskTag');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultDesc = document.getElementById('resultDesc');
+
+        if (currentRegime === 'state') {
+            personaTag.innerText = "Audience Persona: Civic Consumer";
+            riskTag.innerText = "Epistemic Risk: PR Shield & Uncritical Transmissions";
+            resultTitle.innerText = "Quantitative Neutrality as Governance";
+            resultDesc.innerText = "Under crisis conditions in Singapore (Wu, 2021), low computational literacy and reliance on official summary tables force journalists to pass numbers directly to official experts. Data functions as public compliance instructions rather than watchdog auditing.";
+        } else if (trans <= 2 && inter <= 2) {
+            personaTag.innerText = "Audience Persona: Guided Reader";
+            riskTag.innerText = "Epistemic Risk: Illusion of User Agency";
+            resultTitle.innerText = "Gold Standard Superficiality (Young et al., 2018)";
+            resultDesc.innerText = "Despite nominated status, 18 of 26 projects lack open raw data. Interactivity is restricted to basic filtering and hover tooltips, keeping authorial control intact.";
+        } else if (trans >= 4 && lit >= 4 && inter >= 4) {
+            personaTag.innerText = "Audience Persona: Inquiring Critical Citizen";
+            riskTag.innerText = "Epistemic Risk: High Cognitive Load";
+            resultTitle.innerText = "True Exploratory Data Journalism";
+            resultDesc.innerText = "Rare in practice (<15% of award projects). Provides full raw dataset downloads, custom algorithmic transparency, and reconfigurable visualizations.";
+        } else {
+            personaTag.innerText = "Audience Persona: Hybrid Consumer";
+            riskTag.innerText = "Epistemic Risk: Sourcing Opacity";
+            resultTitle.innerText = "Intermediate Newsroom Workflow";
+            resultDesc.innerText = "The project uses custom visual layouts, but hides data methodology, failing global transparency standards (Arias-Robles et al., 2023).";
+        }
+    }
+</script>
+</body>
+</html>
